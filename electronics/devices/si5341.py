@@ -49,7 +49,9 @@ class Si5341(I2CDevice):
             print("LOL: DSPLL is out of Lock")
         if r[0] & 0x10:
             print("SMBUS_TIMEOUT: SMBus timeout error")
-
+        if (r[0] & 0x1F) == 0:
+            print("Clock status OK: no errors.")
+            
     # This loads a CSV file exported from CBPro.
     # pausestep is either a number or an array of step index
     # (starting at 1) that require delays.
