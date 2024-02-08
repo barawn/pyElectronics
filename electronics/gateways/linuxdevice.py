@@ -1,4 +1,4 @@
-import smbus
+import smbus2
 import struct
 
 
@@ -18,7 +18,7 @@ class LinuxDevice(object):
 
     def __init__(self, i2c_bus_index):
         self.i2c_index = i2c_bus_index
-        self.bus = smbus.SMBus(i2c_bus_index)
+        self.bus = smbus2.SMBus(i2c_bus_index)
 
     def i2c_write_register(self, address, register, data):
         if isinstance(data, int):
@@ -36,7 +36,11 @@ class LinuxDevice(object):
         return result
 
     def i2c_read(self, address, length):
-        raise NotImplementedError()
+        msg = smbus2.i2c_msg.read(address, length)
+        self.bus.i2c_rdwr(msg)
+        return list(msg)
 
     def i2c_write(self, address, data):
-        raise NotImplementedError()
+        msg = smbus2.i2c_msg.write(address, data)
+        self.bus.i2c_rdwr(msg)
+
