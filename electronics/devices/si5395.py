@@ -7,6 +7,7 @@
 
 # this is a direct copy of the Si5341 code, they're in different
 # classes because at some point I might add new functions or something
+# - like, now, namely clock detection and shutdown
 
 from electronics.device import I2CDevice
 from csv import DictReader
@@ -38,6 +39,32 @@ class Si5395(I2CDevice):
         a = bytes([addr & 0xFF])
         self.set_page(pg)
         self.i2c_write(a + bytes([val]))
+
+    def identify(self, verbose=False):
+        id = []
+        r = self.read_register(0x2)
+        id.append(r[0])
+        r = self.read_register(0x3)
+        id.append(r[0])
+        r = self.read_register(0x4)
+        id.append(r[0])
+        r = self.read_register(0x5)
+        id.append(r[0])
+        r = self.read_register(0x9)
+        id.append(r[0])
+        r = self.read_register(0xA)
+        id.append(r[0])
+        if verbose:
+            print("Si",
+                  f'{id[1]:x}',
+                  f'{id[0]:x}',
+                  f'{id[2]:x}',
+                  "-",
+                  f'{id[3]:x}',
+                  "-",
+                  f'{id[4]:x}',
+                  f'{id[5]:x}')
+        return id
     
     def status(self):
         r = self.read_register(0xC)
