@@ -40,6 +40,14 @@ class Si5395(I2CDevice):
         self.set_page(pg)
         self.i2c_write(a + bytes([val]))
 
+    def powerdown(self, val):
+        r = self.read_register(0x1E)
+        reg = r[0]
+        if val:
+            self.write_register(0x1E, reg | 0x1)
+        else:
+            self.write_register(0x1E, reg & 0xFE)
+
     def identify(self, verbose=False):
         id = []
         r = self.read_register(0x2)
@@ -56,30 +64,42 @@ class Si5395(I2CDevice):
         id.append(r[0])
         if verbose:
             print("Si",
-                  f'{id[1]:x}',
-                  f'{id[0]:x}',
-                  f'{id[2]:x}',
+                  f'{id[1]:x}', # 53
+                  f'{id[0]:x}', # 95
+                  chr(ord('A')+id[2]),
                   "-",
-                  f'{id[3]:x}',
+                  chr(ord('A')+id[3]),
                   "-",
-                  f'{id[4]:x}',
-                  f'{id[5]:x}')
+                  "G" if id[4] == 0 else "?",
+                  "M" if id[5] == 0 else "?",
+                  sep='')
         return id
-    
+
+    # Status for the 5395 is split between
+    # 0xC and 0xE
     def status(self):
         r = self.read_register(0xC)
-        print("Status:", hex(r[0]))
+        err = False
+        print("Internal Status:", hex(r[0]))
+        if r[0] & 0x1B:
+            err = True
         if r[0] & 0x1:
             print("SYSINCAL = 1: Calibrating")
         if r[0] & 0x2:
-            print("LOSXAXB = 1: No signal at XA pin")
-        if r[0] & 0x4:
-            print("LOSREF = 1: No signal at Phase Frequency detector")
+            print("LOSXAXB = 1: No signal at XAXB pins")
         if r[0] & 0x8:
-            print("LOL: DSPLL is out of Lock")
+            print("XAXB_ERR: Problem locking to XAXB signal")
         if r[0] & 0x10:
             print("SMBUS_TIMEOUT: SMBus timeout error")
-        if (r[0] & 0x1F) == 0:
+
+        r = self.read_register(0xE)
+        print("Holdover/LOL Status:", hex(r[0]))
+
+        if r[0] & 0x2:
+            print("LOL: DSPLL is out of lock")
+            err = True
+
+        if err is False:
             print("Clock status OK: no errors.")
             
     # This loads a CSV file exported from CBPro.
