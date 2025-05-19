@@ -13,7 +13,25 @@ from electronics.device import I2CDevice
 from csv import DictReader
 from time import sleep
 
+from enum import Enum
+
+
 class Si5395(I2CDevice):
+    # these act as the base addresses for each channel
+    class Out(Enum):
+        OUT0A = 0x103
+        OUT0 = 0x108
+        OUT1 = 0x10D
+        OUT2 = 0x112
+        OUT3 = 0x117
+        OUT4 = 0x11C
+        OUT5 = 0x121
+        OUT6 = 0x126
+        OUT7 = 0x12B
+        OUT8 = 0x130
+        OUT9 = 0x135
+        OUT9A = 0x13A
+        
     def __init__(self, bus, address=0x76):
         super().__init__(bus, address)
         # set page to 0 so we know where we are
@@ -48,6 +66,17 @@ class Si5395(I2CDevice):
         else:
             self.write_register(0x1E, reg & 0xFE)
 
+    def output_powerdown(self, ch, val):
+        if not isinstance(ch, self.Out):
+            print("channel needs to be an Out enum")
+            return
+        reg = ch.value
+        r = self.read_register(reg)
+        if val:
+            self.write_register(reg, r[0] | 0x1)
+        else:
+            self.write_register(reg, r[0] & 0xFE)
+            
     def identify(self, verbose=False):
         id = []
         r = self.read_register(0x2)
@@ -101,7 +130,10 @@ class Si5395(I2CDevice):
 
         if err is False:
             print("Clock status OK: no errors.")
-            
+
+    def clockPowerdown(self):
+        return
+    
     # This loads a CSV file exported from CBPro.
     # pausestep is either a number or an array of step index
     # (starting at 1) that require delays.
